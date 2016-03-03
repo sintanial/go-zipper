@@ -14,12 +14,14 @@ type Zipper struct {
 	files map[string]interface{}
 }
 
+// create empty zipper
 func NewZipper() *Zipper {
 	return &Zipper{
 		files: make(map[string]interface{}),
 	}
 }
 
+// create zipper from zip file
 func FromZip(f zip.ReadCloser) *Zipper {
 	zipper := NewZipper()
 	for _, f := range f.File {
@@ -29,6 +31,7 @@ func FromZip(f zip.ReadCloser) *Zipper {
 	return zipper
 }
 
+// get data reader from zip by name
 func (self *Zipper) Reader(name string) (io.Reader, error) {
 	value, ok := self.files[name]
 	if !ok {
@@ -88,6 +91,7 @@ func (self *Zipper) RemoveByPath(path string) *Zipper {
 	return nil
 }
 
+// remove data from zip by shell mask
 func (self *Zipper) RemoveByMask(mask string) error {
 	for name, _ := range self.files {
 		ok, err := path.Match(mask, name)
@@ -102,6 +106,7 @@ func (self *Zipper) RemoveByMask(mask string) error {
 	return nil
 }
 
+// pack contained data to zip
 func (self *Zipper) Pack() (*bytes.Buffer, error) {
 	buffer := &bytes.Buffer{}
 	zw := zip.NewWriter(buffer)
@@ -135,6 +140,7 @@ func (self *Zipper) Pack() (*bytes.Buffer, error) {
 	return buffer, nil
 }
 
+// write data to writer (for example to zip file)
 func (self *Zipper) WriteTo(w io.Writer) error {
 	r, err := self.Pack()
 	if err != nil {
