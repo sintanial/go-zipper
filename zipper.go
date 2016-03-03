@@ -106,7 +106,7 @@ func (self *Zipper) RemoveByMask(mask string) error {
 	return nil
 }
 
-// pack contained data to zip
+// packs data to zip
 func (self *Zipper) Pack() (*bytes.Buffer, error) {
 	buffer := &bytes.Buffer{}
 	zw := zip.NewWriter(buffer)
