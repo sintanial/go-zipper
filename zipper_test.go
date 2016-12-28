@@ -127,8 +127,9 @@ func checkZipper(t *testing.T, zp *Zipper, name string, value []byte) {
 }
 
 func packZipper(t *testing.T, zp *Zipper, name string, value []byte) *zip.Reader {
-	buffer, err := zp.Pack()
-	if err != nil {
+	buffer := &bytes.Buffer{}
+
+	if err := WriteTo(zp, buffer); err != nil {
 		t.Fatal("pack: " + err.Error())
 	}
 

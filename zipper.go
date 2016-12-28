@@ -106,52 +106,7 @@ func (self *Zipper) RemoveByMask(mask string) error {
 	return nil
 }
 
-// packs data to zip
-func (self *Zipper) Pack() (*bytes.Buffer, error) {
-	buffer := &bytes.Buffer{}
-	zw := zip.NewWriter(buffer)
-	defer zw.Close()
-
-	for name, value := range self.files {
-		switch v := value.(type) {
-		case []byte:
-			err := addBytes(zw, name, v)
-			if err != nil {
-				return nil, err
-			}
-		case *zip.File:
-			err := addZip(zw, name, v)
-			if err != nil {
-				return nil, err
-			}
-		case io.Reader:
-			err := addReader(zw, name, v)
-			if err != nil {
-				return nil, err
-			}
-		case string:
-			err := addFile(zw, name, v)
-			if err != nil {
-				return nil, err
-			}
-		}
-	}
-
-	return buffer, nil
-}
-
-// write data to writer (for example to zip file)
-func (self *Zipper) WriteTo(w io.Writer) error {
-	r, err := self.Pack()
-	if err != nil {
-		return err
-	}
-
-	_, err = io.Copy(w, r)
-	return err
-}
-
-func addFile(zw *zip.Writer, name string, file string) error {
+func AddFile(zw *zip.Writer, name string, file string) error {
 	w, err := zw.Create(name)
 	if err != nil {
 		return err
@@ -171,7 +126,7 @@ func addFile(zw *zip.Writer, name string, file string) error {
 	return nil
 }
 
-func addReader(zw *zip.Writer, name string, r io.Reader) error {
+func AddReader(zw *zip.Writer, name string, r io.Reader) error {
 	w, err := zw.Create(name)
 	if err != nil {
 		return err
@@ -185,7 +140,7 @@ func addReader(zw *zip.Writer, name string, r io.Reader) error {
 	return nil
 }
 
-func addZip(zw *zip.Writer, name string, f *zip.File) error {
+func AddZip(zw *zip.Writer, name string, f *zip.File) error {
 	rc, err := f.Open()
 	if err != nil {
 		return err
@@ -205,7 +160,7 @@ func addZip(zw *zip.Writer, name string, f *zip.File) error {
 	return nil
 }
 
-func addBytes(zw *zip.Writer, name string, b []byte) error {
+func AddBytes(zw *zip.Writer, name string, b []byte) error {
 	w, err := zw.Create(name)
 	if err != nil {
 		return err
@@ -217,4 +172,42 @@ func addBytes(zw *zip.Writer, name string, b []byte) error {
 	}
 
 	return nil
+}
+
+func AddString(zw *zip.Writer, name string, s string) error {
+	return AddBytes(zw, name, []byte(s))
+}
+
+// packs data to zip
+func WriteTo(zp *Zipper, w io.Writer) error {
+	zw := zip.NewWriter(w)
+	defer zw.Close()
+	return Concat(zw, zp)
+}
+
+func Concat(zw *zip.Writer, zp *Zipper) error {
+	for name, value := range zp.files {
+		var err error
+		switch v := value.(type) {
+		case []byte:
+			err = AddBytes(zw, name, v)
+		case *zip.File:
+			err = AddZip(zw, name, v)
+		case io.Reader:
+			err = AddReader(zw, name, v)
+		case string:
+			err = AddFile(zw, name, v)
+		}
+
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// write data to writer (for example to zip file)
+func (self *Zipper) WriteTo(w io.Writer) error {
+	return WriteTo(self, w)
 }
